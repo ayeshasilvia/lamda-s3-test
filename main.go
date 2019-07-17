@@ -13,8 +13,8 @@ import (
 )
 
 func s3FileUpload(data string) error {
-	bucketname := "silvia-lambda-test"
-	objectname := "test"
+	bucketname := os.Getenv("BUCKET_NAME")
+	objectname := os.Getenv("OBJECT_NAME")
 
 	f, err := os.OpenFile("/tmp/"+objectname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
@@ -25,7 +25,7 @@ func s3FileUpload(data string) error {
 	defer f.Close()
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-southeast-2")},
+		Region: aws.String(os.Getenv("REGION"))},
 	)
 
 	downloader := s3manager.NewDownloader(sess)
@@ -36,13 +36,13 @@ func s3FileUpload(data string) error {
 			Key:    aws.String(objectname),
 		})
 	if err != nil {
-		log.Fatalf("#### Unable to download item %q, %v", objectname, err)
+		log.Fatalf("Unable to download item %q, %v", objectname, err)
 		return nil
 	}
 
-	log.Println("#### Downloaded", f.Name(), numBytes, "bytes")
+	log.Println("Downloaded", f.Name(), numBytes, "bytes")
 
-	log.Print("##### Appending to file")
+	log.Print("Appending to file")
 
 	if _, err = f.WriteString(data + "\n"); err != nil {
 		log.Fatal(err)
@@ -53,7 +53,7 @@ func s3FileUpload(data string) error {
 
 	file, err := os.Open("/tmp/" + objectname)
 	if err != nil {
-		log.Fatal("#### Cannot open file")
+		log.Fatal("Cannot open file")
 		return err
 	}
 
@@ -74,18 +74,9 @@ func s3FileUpload(data string) error {
 }
 
 func insert(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// var b string
-	// err := re
-	// if err != nil {
-	// 	return events.APIGatewayProxyResponse{
-	// 		StatusCode: 400,
-	// 		Body:       "Invalid payload",
-	// 	}, nil
-	// }
 
-	log.Printf("Received request #### %v", req.Body)
+	log.Printf("Received request %v", req.Body)
 
-	//json.Marshal(movies)
 	err := s3FileUpload(req.Body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -105,5 +96,4 @@ func insert(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, 
 
 func main() {
 	lambda.Start(insert)
-	// s3FileUpload("test payload")
 }
