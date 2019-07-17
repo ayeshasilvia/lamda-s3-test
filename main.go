@@ -16,7 +16,7 @@ func s3FileUpload(data string) error {
 	bucketname := "silvia-lambda-test"
 	objectname := "test"
 
-	f, err := os.OpenFile(objectname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile("/tmp/"+objectname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatal("Cannot open file")
 		return err
@@ -36,13 +36,13 @@ func s3FileUpload(data string) error {
 			Key:    aws.String(objectname),
 		})
 	if err != nil {
-		log.Fatalf("Unable to download item %q, %v", objectname, err)
+		log.Fatalf("#### Unable to download item %q, %v", objectname, err)
 		return nil
 	}
 
-	log.Println("Downloaded", f.Name(), numBytes, "bytes")
+	log.Println("#### Downloaded", f.Name(), numBytes, "bytes")
 
-	log.Print("Appending to file")
+	log.Print("##### Appending to file")
 
 	if _, err = f.WriteString(data + "\n"); err != nil {
 		log.Fatal(err)
@@ -51,9 +51,9 @@ func s3FileUpload(data string) error {
 
 	uploader := s3manager.NewUploader(sess)
 
-	file, err := os.Open(objectname)
+	file, err := os.Open("/tmp/" + objectname)
 	if err != nil {
-		log.Fatal("Cannot open file")
+		log.Fatal("#### Cannot open file")
 		return err
 	}
 
@@ -83,12 +83,10 @@ func insert(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, 
 	// 	}, nil
 	// }
 
-	b := req.Body
-
-	log.Print(b)
+	log.Printf("Received request #### %v", req.Body)
 
 	//json.Marshal(movies)
-	err := s3FileUpload(b)
+	err := s3FileUpload(req.Body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
@@ -101,7 +99,7 @@ func insert(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, 
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 		},
-		Body: string(""),
+		Body: string(req.Body),
 	}, nil
 }
 
